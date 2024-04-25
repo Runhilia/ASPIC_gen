@@ -5,6 +5,7 @@ from Argument import Argument
 import matplotlib.pyplot as plt
 import networkx as nx
 import re
+import streamlit as st
 
 def parse_rules(file):
     rules = []
@@ -14,7 +15,6 @@ def parse_rules(file):
         for line in lines:
             priority = -1
             is_defeasible = False
-            premises_literal = []
             premises_string = []
             conclusion_string = ""
             conclusion_literal = None
@@ -28,11 +28,19 @@ def parse_rules(file):
                 conclusion_string = groups[3].strip() if groups[3] else None
                 priority = int(groups[4]) if groups[4] else -1
 
-            for premise in premises_string:
-                if premise[0] == "!":
-                    premises_literal.append(Literal(premises_string[1:], True))
-                else:
-                    premises_literal.append(Literal(premises_string, False))
+            premises_literal = None
+            if premises_string:
+                premises_literal = []
+                for premise in premises_string:
+                    premise = premise.strip()  # Supprimer les espaces supplémentaires
+                    if premise:
+                        negate = False
+                        if premise[0] == "!":
+                            negate = True
+                            premise = premise[1:]
+                        premises_literal.append(Literal(premise, negate))
+            else :
+                premises_literal = None
 
             if conclusion_string[0] == "!":
                 conclusion_literal = Literal(conclusion_string[1:], True)
@@ -44,6 +52,13 @@ def parse_rules(file):
 
 
 def main():
-    rules = parse_rules("rules.txt")
+    st.title("Argumentation Framework")
+    st.text("This is a simple implementation of an Argumentation Framework using Python.")
+    st.text("The rules are read from a file called rules.txt")
+
+    rules = parse_rules("rules1.txt")
     for rule in rules:
         rule.print()
+
+
+main()
