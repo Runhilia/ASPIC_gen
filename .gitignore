@@ -1,4 +1,8 @@
+# Ignore les fichiers et répertoires générés par Python
+__pycache__/
 
-/__pycache__
-/.idea
-/.venv
+# Ignore les fichiers et répertoires spécifiques à PyCharm (.idea)
+.idea/
+
+# Ignore le répertoire virtuel Python
+.venv/
