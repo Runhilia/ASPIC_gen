@@ -5,22 +5,24 @@ class Rule:
         self.is_defeasible = is_defeasible # boolean
         self.weight = weight # int
         self.reference = reference # Literal
+        
+    def to_string(self):
+        str = ""
+        str += self.reference.to_string()
+        str += " : "
+        if len(self.premises) > 0:
+            for i, premise in enumerate(self.premises):
+                str += premise.to_string()
+                if i < len(self.premises) - 1:
+                    str += ", "
+        str += " => " if self.is_defeasible else " -> "
+        str += self.conclusion.to_string()
+        if self.weight != -1:
+            str += f" {self.weight}"
+        return str
 
     def print(self):
-        self.reference.print()
-        print(" :", end="")
-        if len(self.premises) > 0:
-            print(" ", end="")
-            for i, premise in enumerate(self.premises):
-                premise.print()
-                if i < len(self.premises) - 1:
-                    print(",", end="")
-        print(" => " if self.is_defeasible else " -> ", end="")
-        self.conclusion.print()
-        if self.weight != -1:
-            print(" " + str(self.weight))
-        else :
-            print()
+        print(self.to_string())
 
     def get_is_defeasible(self):
         return self.is_defeasible

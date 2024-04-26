@@ -3,18 +3,20 @@ class Argument:
         self.top_rule = top_rule # Rule
         self.sub_arguments = sub_arguments # list of Argument
         self.name = name # string
-
-    def print(self):
-        print(f"{self.name} :", end=" ")
-
+        
+    def to_string(self):
+        str = f"{self.name} : "
         if len(self.sub_arguments) > 0:
             for i, sub_argument in enumerate(self.sub_arguments):
-                print(sub_argument.name, end="")
+                str += sub_argument.name
                 if i < len(self.sub_arguments) - 1:
-                    print(",", end="")
-        print(" => " if self.top_rule.get_is_defeasible() else " -> ", end="")
-        self.top_rule.get_conclusion().print()
-        print()
+                    str += ","
+        str += " => " if self.top_rule.get_is_defeasible() else " -> "
+        str += self.top_rule.get_conclusion().to_string()
+        return str
+
+    def print(self):
+        print(self.to_string())
     
     def __iter__(self):
         return iter(self.sub_arguments)
