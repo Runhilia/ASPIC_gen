@@ -17,7 +17,7 @@ class Rule:
                     str += ", "
         str += " => " if self.is_defeasible else " -> "
         str += self.conclusion.to_string()
-        if self.weight != -1:
+        if self.weight != 99:
             str += f" {self.weight}"
         return str
 
