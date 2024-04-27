@@ -89,12 +89,12 @@ def print_rules(rules):
 #Fonction qui permer de créer les arguments à partir d'une liste de règles passé en paramètre
 def create_arguments(total_rules):
     arguments = []
-    rules = list(total_rules) # list of Rule to be processed
-    remaining_rules = list(rules) # list of Rule to be processed
+    rules = list(total_rules)  # list of Rule to be processed
+    remaining_rules = list(rules)  # list of Rule to be processed
     new_argument_created = True
-    
+
     while (len(remaining_rules) > 0 and new_argument_created):
-        new_argument_created = False      
+        new_argument_created = False
         for i, rule in enumerate(remaining_rules):
             # If the rule has no premises, create a new argument
             if len(rule.get_premises()) == 0:
@@ -103,97 +103,101 @@ def create_arguments(total_rules):
                 arguments.append(argument)
                 rules.remove(rule)
                 new_argument_created = True
-                
+
         for i, rule in enumerate(remaining_rules):
             # If the rule has premises
-                sub_arguments = []
-                # Find the sub-arguments which can be used to create a new argument
-                for premise in rule.get_premises():
-                    for argument in arguments:
-                        if argument.get_top_rule().get_conclusion() == premise:
-                            sub_arguments.append(argument)
-                
-                nb_premises = len(rule.get_premises())
-                # If the rule has one premise
-                if(nb_premises == 1):
-                    found = False
-                    # Create a new argument if the sub-argument is not found in a argument for the current rule
-                    for sub_argument in sub_arguments:
-                        for argument in arguments:
-                            if argument.get_top_rule() == rule:
-                                for sub in argument.get_sub_arguments():
-                                    if sub_argument == sub:
-                                        found = True
-                                        break
+            sub_arguments = []
+            # Find the sub-arguments which can be used to create a new argument
+            for premise in rule.get_premises():
+                for argument in arguments:
+                    if argument.get_top_rule().get_conclusion() == premise:
+                        sub_arguments.append(argument)
 
-                        if not found:
-                            name = "A" + str(len(arguments) + 1)
-                            argument = Argument(rule,[sub_argument], name)
-                            arguments.append(argument)
-                            new_argument_created = True
-                        found = False
-                            
-                # If the rule has two premises
-                elif(nb_premises == 2):
+            nb_premises = len(rule.get_premises())
+            # If the rule has one premise
+            if (nb_premises == 1):
+                found = False
+                # Create a new argument if the sub-argument is not found in a argument for the current rule
+                for sub_argument in sub_arguments:
+                    for argument in arguments:
+                        if argument.get_top_rule() == rule:
+                            for sub in argument.get_sub_arguments():
+                                if sub_argument == sub:
+                                    found = True
+                                    break
+
+                    if not found:
+                        name = "A" + str(len(arguments) + 1)
+                        argument = Argument(rule, [sub_argument], name)
+                        arguments.append(argument)
+                        new_argument_created = True
                     found = False
-                    # Create a new argument if the 2 sub-arguments are not found in a same argument for the current rule
-                    for i in range(0, len(sub_arguments)):
-                        for j in range(0, len(sub_arguments)):
-                            if(sub_arguments[i].get_top_rule().get_conclusion() != sub_arguments[j].get_top_rule().get_conclusion()):
-                                for argument in arguments:
-                                    if argument.get_top_rule() == rule:
-                                        for sub in argument.get_sub_arguments():
-                                            for sub2 in argument.get_sub_arguments():
-                                                if sub != sub2:
-                                                    if (sub_arguments[i] == sub and sub_arguments[j] == sub2) or (sub_arguments[i] == sub2 and sub_arguments[j] == sub):
-                                                        found = True
-                                                        break
-                                                        
-                                if not found :
-                                    name = "A" + str(len(arguments) + 1)
-                                    argument = Argument(rule, [sub_arguments[i], sub_arguments[j]], name)
-                                    arguments.append(argument)
-                                    new_argument_created = True
-                                found = False
-                        
+
+            # If the rule has two premises
+            elif (nb_premises == 2):
+                found = False
+                # Create a new argument if the 2 sub-arguments are not found in a same argument for the current rule
+                for i in range(0, len(sub_arguments)):
+                    for j in range(0, len(sub_arguments)):
+                        if (sub_arguments[i].get_top_rule().get_conclusion() != sub_arguments[
+                            j].get_top_rule().get_conclusion()):
+                            for argument in arguments:
+                                if argument.get_top_rule() == rule:
+                                    for sub in argument.get_sub_arguments():
+                                        for sub2 in argument.get_sub_arguments():
+                                            if sub != sub2:
+                                                if (sub_arguments[i] == sub and sub_arguments[j] == sub2) or (
+                                                        sub_arguments[i] == sub2 and sub_arguments[j] == sub):
+                                                    found = True
+                                                    break
+
+                            if not found:
+                                name = "A" + str(len(arguments) + 1)
+                                argument = Argument(rule, [sub_arguments[i], sub_arguments[j]], name)
+                                arguments.append(argument)
+                                new_argument_created = True
+                            found = False
+
         remaining_rules = list(rules)
-        
+        print("Remaining rules: ", len(remaining_rules))
+        print("Arguments: ", len(arguments))
     return arguments
 
 
 def affichageArgument(argumentsList):
-    
+    ret= ""
     for argument in argumentsList:
-        argument.print()
+        argument.to_string()
     
     defeasible_rules = argument.get_defeasible_rules()
-    print("Defeasible rules of " + argument.get_name() + ":", end=" ")
+    ret += "Defeasible rules of " + argument.get_name() + ": "
     for i, rule in enumerate(defeasible_rules):
-        print(rule.get_reference().get_value(), end="")
+        ret += rule.get_reference().get_value()
         if i < len(defeasible_rules) - 1:
-            print(",", end="")  
-    print()   
+            ret += ","
+    ret += "\n"
     
     last_defeasible_rules = argument.get_last_defeasible_rules()
-    print("Last defeasible rules of " + argument.get_name() + ":" , end=" ")
+    ret += "Last defeasible rules of " + argument.get_name() + ":"
     for i, rule in enumerate(last_defeasible_rules):
-        print(rule.get_reference().get_value(), end="")
+        ret += rule.get_reference().get_value()
         if i < len(last_defeasible_rules) - 1:
-            print(",", end="")
-    print()
+            ret += ","
+    ret += "\n"
         
     sub_arguments = argument.get_sub_arguments()
-    print("Sub-arguments of " + argument.get_name() + ":" , end=" ")
+    ret += "Sub-arguments of " + argument.get_name() + ":"
     for sub_argument in sub_arguments:
-        print(sub_argument.get_name(), end="")
+        ret += sub_argument.get_name()
         if sub_argument != sub_arguments[-1]:
-            print(",", end="")
-
-    print("\n")
+            ret += ","
+    ret += "\n"
+    return ret
 
 
 #Fonction qui permet de générer et afficher les undercuts par rapport a la liste d'arguments passés en paramètre
 def generate_undercuts(arguments):
+    ret = ""
     attackers = []
     undercuts = []
     
@@ -218,17 +222,18 @@ def generate_undercuts(arguments):
                             break
           
     # Print the undercuts
+    st.text("Number of undercuts: " + str(len(undercuts)))
     for i, _ in enumerate(undercuts):
-        print("(" + undercuts[i][0] + "," + undercuts[i][1] + ")" , end=" ")
-        
-    print("\n")
-        
+        ret += "(" + undercuts[i][0] + "," + undercuts[i][1] + ")" + " "
+    ret += "\n"
+    st.code(ret, language="python")
     return undercuts
 
 
 #Fonction qui permet de générer et d'afficher les rebuts par rapport a la liste d'argument passsé en paramètre 
 def generate_rebuts(arguments):
     rebuts = []
+    ret = ""
     
     for argument in arguments:
         for argument2 in arguments:
@@ -249,15 +254,17 @@ def generate_rebuts(arguments):
                         
     # Print the rebuts
     attacker = 1
-    print("Number of rebuts: " + str(len(rebuts)))
+
+    st.text("Number of rebuts: " + str(len(rebuts)))
     for i, _ in enumerate(rebuts):
         number = rebuts[i][0][1:]
         if int(number) > attacker:
             attacker = int(number)
-            print()
-        print("(" + rebuts[i][0] + "," + rebuts[i][1] + ")" , end=" ")
-    print("\n")
-        
+            ret+= "\n"
+        ret += "(" + rebuts[i][0] + "," + rebuts[i][1] + ")" + " "
+    ret += "\n"
+
+    st.code(ret, language="python")
     return rebuts
 
 
@@ -272,8 +279,8 @@ def  representPreferencesRules(total_rules):
         elif rule.get_weight() == 1:
             preferred_rules[rule.get_reference().get_value()] = 2 
     
-    for rule in preferred_rules:
-        print(rule + ":", preferred_rules[rule])
+    return preferred_rules
+
 
 
 #Création d'une fonction qui permet de comparer les arguments entre eux et d'afficher cette comparaison 
@@ -365,28 +372,90 @@ def generate_defeats(arguments, rebuts, preferred_arguments):
                     
     # Print the defeats
     attacker = 1
-    print("Number of defeats: " + str(len(defeats)))
+    st.text("Number of defeats: " + str(len(defeats)))
+    ret = ""
     for i, _ in enumerate(defeats):
         number = defeats[i][0][1:]
         if int(number) > attacker:
             attacker = int(number)
-            print()
-        print("(" + defeats[i][0] + "," + defeats[i][1] + ")" , end=" ")
-    print("\n")
-    
+            ret += "\n"
+        ret += "(" + defeats[i][0] + "," + defeats[i][1] + ")" + " "
+    ret += "\n"
+    st.code(ret, language="python")
     return defeats
 
 
 
 def main():
     st.title("Argumentation Framework")
-    st.text("This is a simple implementation of an Argumentation Framework using Python.")
-    st.text("The rules are read from a file called rules.txt")
+    st.subheader("This is a simple implementation of an Argumentation Framework using Python.")
 
-    rules = parse_rules("rules1.txt")
-    for rule in rules:
-        rule.print()
+    uploaded_file = st.file_uploader("Choose a file")
+    if uploaded_file is not None:
+        rules = parse_rules(uploaded_file.name)
 
-        
+        st.subheader("Rules")
+        st.text("The rules are : ")
+        code = ""
+        for rule in rules:
+            code += rule.to_string() + "\n"
+        st.code(code, language="python")
+
+        st.text("The contrapositive rules are : ")
+        code = ""
+        total_rules = list(rules)
+        for rule in rules:
+            new_rules = contraposition(rule)
+            for new_rule in new_rules:
+                total_rules.append(new_rule)
+
+        for rule in total_rules:
+            code += rule.to_string() + "\n"
+        st.code(code, language="python")
+
+        st.subheader("Arguments ")
+        code = ""
+        arguments = create_arguments(total_rules)
+        for argument in arguments:
+            code += argument.to_string() + "\n"
+        st.code(code, language="python")
+
+        st.text(affichageArgument(arguments))
+
+
+        generate_undercuts(arguments)
+
+        rebuts = generate_rebuts(arguments)
+        st.subheader("Defeats")
+        prefered_rules = representPreferencesRules(total_rules)
+
+        strat1 = st.radio("Choose a principle", ("Elitist", "Democratic"), index=None)
+        strat2 = st.radio("Choose a link principle", ("Weakest Link", "Last Link"), index=None)
+        if( strat1 and strat2):
+            preferred_arguments = compareArguments(arguments, prefered_rules, strat1, strat2)
+            defeats = generate_defeats(arguments, rebuts, preferred_arguments)
+
+            G = nx.DiGraph()
+
+            # Add the nodes (arguments)
+            argument_names = []
+            for argument in arguments:
+                argument_names.append(argument.get_name())
+            G.add_nodes_from(argument_names)
+
+            # Add the edges (attacks)
+            G.add_edges_from(defeats)
+
+            # Visualisation du graphe
+            plt.figure(figsize=(8, 6))
+            pos = nx.shell_layout(G)
+            nx.draw(G, pos, with_labels=True, node_size=1000, node_color='skyblue', font_size=12, arrowsize=20,
+                    linewidths=1, edge_color='gray', arrows=True)
+
+            plt.title("Argumentation graph")
+            st.pyplot(plt)
+
+
+
 
 main()
