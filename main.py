@@ -7,6 +7,7 @@ import networkx as nx
 import re
 import streamlit as st
 
+# Création d'une fonction qui permet de parser les règles d'un fichier passé en paramètre
 def parse_rules(file):
     rules = []
     pattern = r"\[(\w+)\]?(.*)\s*([-=]>)\s*(\W?\w+)\s?(\d+)?"
@@ -52,7 +53,7 @@ def parse_rules(file):
 
         
        
-#Création d'une fonction qui fait la contraposée des règles strictes
+# Création d'une fonction qui fait la contraposée des règles strictes
 def contraposition(rule):
     new_rules = []
     # If the rule is not defeasible and has premises
@@ -69,7 +70,7 @@ def contraposition(rule):
     return new_rules
      
         
-#Fonction qui permer de créer les arguments à partir d'une liste de règles passé en paramètre
+# Fonction qui permer de créer les arguments à partir d'une liste de règles passé en paramètre
 def create_arguments(total_rules):
     arguments = []
     rules = list(total_rules)  # list of Rule to be processed
@@ -149,7 +150,7 @@ def create_arguments(total_rules):
 
     return arguments
 
-
+# Fonction qui permet d'afficher les arguments
 def affichageArgument(argumentsList):
     ret= ""
     for argument in argumentsList:
@@ -181,7 +182,7 @@ def affichageArgument(argumentsList):
     return ret
 
 
-#Fonction qui permet de générer et afficher les undercuts par rapport a la liste d'arguments passés en paramètre
+# Fonction qui permet de générer et afficher les undercuts par rapport a la liste d'arguments passés en paramètre
 def generate_undercuts(arguments):
     ret = ""
     attackers = []
@@ -216,7 +217,7 @@ def generate_undercuts(arguments):
     return undercuts
 
 
-#Fonction qui permet de générer et d'afficher les rebuts par rapport a la liste d'argument passsé en paramètre 
+# Fonction qui permet de générer et d'afficher les rebuts par rapport a la liste d'argument passsé en paramètre 
 def generate_rebuts(arguments):
     rebuts = []
     ret = ""
@@ -254,7 +255,7 @@ def generate_rebuts(arguments):
     return rebuts
 
 
-#Représentation des préférences entre les règles d'une liste de règles passée en paramètre
+# Représentation des préférences entre les règles d'une liste de règles passée en paramètre
 def  representPreferencesRules(total_rules):
     preferred_rules = {}
     for rule in total_rules:
@@ -263,8 +264,7 @@ def  representPreferencesRules(total_rules):
     return preferred_rules
 
 
-
-#Création d'une fonction qui permet de comparer les arguments entre eux et d'afficher cette comparaison 
+# Fonction qui permet de retourner la priorité la plus élevée pour un ensemble de règles
 def best_rule(rules, preferred_rules):
     best_priority = 0
     for rule in rules:
@@ -273,7 +273,7 @@ def best_rule(rules, preferred_rules):
             best_priority = priority_rule
     return best_priority
 
-
+# Fonction qui permet de retourner la priorité la plus basse pour un ensemble de règles
 def worst_rule(rules, preferred_rules):
     worst_priority = 99999
     for rule in rules:
@@ -282,7 +282,7 @@ def worst_rule(rules, preferred_rules):
             worst_priority = priority_rule
     return worst_priority
 
-
+# Création d'une fonction qui permet de comparer les arguments entre eux et d'afficher cette comparaison 
 def compare_arguments(arguments, preferred_rules, principle, link_principle):
     preferred_arguments = {}
     priorityArgument = 0
@@ -335,7 +335,7 @@ def compare_arguments(arguments, preferred_rules, principle, link_principle):
     return preferred_arguments
 
 
-#Fonction permettant de générer et d'afficher les défaites
+# Fonction permettant de générer et d'afficher les défaites
 def generate_defeats(arguments, rebuts, preferred_arguments, preferred_rules, principle, link_principle):
     defeats = []
     match principle:
@@ -400,7 +400,7 @@ def generate_defeats(arguments, rebuts, preferred_arguments, preferred_rules, pr
     st.code(ret, language="python")
     return defeats
 
-
+# Fonction qui permet de donner le nombre de défaites subies par chaque argument
 def degree_of_defeat(arguments, defeats):
     degree_of_defeat = {}
     for argument in arguments:
@@ -412,8 +412,8 @@ def degree_of_defeat(arguments, defeats):
 
     return degree_of_defeat
 
-
-def get_burdern_number(arguments, defeats, steps):
+# Fonction qui permet de calculer le burden_number pour chaque argument
+def get_burden_number(arguments, defeats, steps):
     burden_number = {}
     # We calculate the burden number for each argument for the number of steps
     for i in range(0, steps):
@@ -444,7 +444,7 @@ def get_burdern_number(arguments, defeats, steps):
     st.code(ret, language="python")
     return burden_number
 
-
+# Fonction qui permet de classer les arguments selon leur burden_number
 def rank_arguments(arguments, burden_number):
     rank = {}
     # Get the last value of the burden number of each argument
@@ -489,7 +489,7 @@ def main():
             code += rule.to_string() + "\n"
         st.code(code, language="python")
 
-        st.text("The contrapositive rules are : ")
+        st.text("The rules and their counterparts are as follows ")
         code = ""
         total_rules = list(rules)
         for rule in rules:
@@ -566,7 +566,7 @@ def main():
             st.pyplot(plt)
 
             st.subheader("Rank of arguments")
-            burden_number = get_burdern_number(arguments, defeats, 10)
+            burden_number = get_burden_number(arguments, defeats, 10)
 
             rank_arguments(arguments, burden_number)
 
