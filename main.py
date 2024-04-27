@@ -7,7 +7,8 @@ import networkx as nx
 import re
 import streamlit as st
 
-# Création d'une fonction qui permet de parser les règles d'un fichier passé en paramètre
+
+# Creation of a function that reads the rules from a file and returns a list of rules :
 def parse_rules(file):
     rules = []
     pattern = r"\[(\w+)\]?(.*)\s*([-=]>)\s*(\W?\w+)\s?(\d+)?"
@@ -33,7 +34,7 @@ def parse_rules(file):
             if premises_string:
                 premises_literal = []
                 for premise in premises_string:
-                    premise = premise.strip()  # Supprimer les espaces supplémentaires
+                    premise = premise.strip()
                     if premise:
                         negate = False
                         if premise[0] == "!":
@@ -51,9 +52,8 @@ def parse_rules(file):
             rules.append(Rule(premises_literal, conclusion_literal, is_defeasible, priority, Literal(rule_name, False)))
     return rules
 
-        
-       
-# Création d'une fonction qui fait la contraposée des règles strictes
+
+# Creation of a function that performs the contrapositive of the strict rules :
 def contraposition(rule):
     new_rules = []
     # If the rule is not defeasible and has premises
@@ -64,13 +64,15 @@ def contraposition(rule):
             new_premises.pop(i)
             new_premises.append(Literal(rule.get_conclusion().get_value(), not rule.get_conclusion().get_is_negative()))
             f = rule.get_reference().get_value() + "c" + str(i + 1)
-            new_rule = Rule(new_premises, Literal(rule.get_premises()[i].get_value(), not rule.get_premises()[i].get_is_negative()), False, rule.get_weight(), Literal(f, False))
+            new_rule = Rule(new_premises, Literal(rule.get_premises()[i].get_value(),
+                                                  not rule.get_premises()[i].get_is_negative()),
+                            False, rule.get_weight(), Literal(f, False))
             new_rules.append(new_rule)
-            
+
     return new_rules
-     
-        
-# Fonction qui permer de créer les arguments à partir d'une liste de règles passé en paramètre
+
+
+# Function for creating arguments from rules :
 def create_arguments(total_rules):
     arguments = []
     rules = list(total_rules)  # list of Rule to be processed
@@ -78,7 +80,7 @@ def create_arguments(total_rules):
     new_argument_created = True
 
     # While there are rules to be processed and a new argument has been created in the last iteration
-    while (len(remaining_rules) > 0 and new_argument_created):
+    while len(remaining_rules) > 0 and new_argument_created:
         new_argument_created = False
         for i, rule in enumerate(remaining_rules):
             # If the rule has no premises, create a new argument
@@ -101,7 +103,7 @@ def create_arguments(total_rules):
 
                 nb_premises = len(rule.get_premises())
                 # If the rule has one premise
-                if (nb_premises == 1):
+                if nb_premises == 1:
                     found = False
                     # Create a new argument if the sub-argument is not found in a argument for the current rule
                     for sub_argument in sub_arguments:
@@ -121,16 +123,17 @@ def create_arguments(total_rules):
                         found = False
 
                 # If the rule has two premises
-                elif (nb_premises == 2):
+                elif nb_premises == 2:
                     found = False
                     # Create a new argument if the 2 sub-arguments are not found in a same argument for the current rule
                     for i in range(0, len(sub_arguments)):
                         for j in range(0, len(sub_arguments)):
                             if (sub_arguments[i].get_top_rule().get_conclusion() != sub_arguments[
-                                j].get_top_rule().get_conclusion()):
+                                    j].get_top_rule().get_conclusion()):
                                 for argument in arguments:
                                     if argument.get_top_rule() == rule:
-                                        # Check if the 2 sub-arguments are already sub-arguments in an argument for the current rule
+                                        # Check if the 2 sub-arguments are already sub-arguments
+                                        # in an argument for the current rule
                                         for sub in argument.get_sub_arguments():
                                             for sub2 in argument.get_sub_arguments():
                                                 if sub != sub2:
@@ -150,12 +153,14 @@ def create_arguments(total_rules):
 
     return arguments
 
-# Fonction qui permet d'afficher les arguments
-def affichageArgument(argumentsList):
-    ret= ""
-    for argument in argumentsList:
+
+# Display arguments with a list of their undoable rules,
+# a list of their last undoable rules and a list of their sub-arguments:
+def display_arguments(arguments_list):
+    ret = ""
+    for argument in arguments_list:
         argument.to_string()
-    
+
         defeasible_rules = argument.get_defeasible_rules()
         ret += "Defeasible rules of " + argument.get_name() + ": "
         for i, rule in enumerate(defeasible_rules):
@@ -182,24 +187,25 @@ def affichageArgument(argumentsList):
     return ret
 
 
-# Fonction qui permet de générer et afficher les undercuts par rapport a la liste d'arguments passés en paramètre
+# Function used to generate undercuts in relation to arguments :
 def generate_undercuts(arguments):
-    ret = ""
     attackers = []
     undercuts = []
-    
+
+    # Get the attackers
     for argument in arguments:
         conclusion = argument.get_top_rule().get_conclusion()
         # Check if the conclusion is the negation of a rule
         if "r" in conclusion.get_value() and conclusion.get_is_negative():
             attackers.append(argument)
 
+    # Find the undercuts
     for attacker in attackers:
         for argument in arguments:
-            # Check if the attacker's conclusion is the argument's top rule's 
+            # Check if the attacker's conclusion is the argument's top rule's
             if argument.get_top_rule().get_reference().get_value() == attacker.get_top_rule().get_conclusion().get_value():
                 undercuts.append([attacker.get_name(), argument.get_name()])
-            else :
+            else:
                 # Find if a sub-argument be part of the attacked arguments
                 for sub_argument in argument.get_sub_arguments():
                     for i, _ in enumerate(undercuts):
@@ -207,9 +213,10 @@ def generate_undercuts(arguments):
                         if undercuts[i][0] == attacker.get_name() and undercuts[i][1] == sub_argument.get_name():
                             undercuts.append([attacker.get_name(), argument.get_name()])
                             break
-          
+
     # Print the undercuts
     st.text("Number of undercuts: " + str(len(undercuts)))
+    ret = ""
     for i, _ in enumerate(undercuts):
         ret += "(" + undercuts[i][0] + "," + undercuts[i][1] + ")" + " "
     ret += "\n"
@@ -217,37 +224,36 @@ def generate_undercuts(arguments):
     return undercuts
 
 
-# Fonction qui permet de générer et d'afficher les rebuts par rapport a la liste d'argument passsé en paramètre 
+# Function used to generate rebuttals in relation to the arguments :
 def generate_rebuts(arguments):
     rebuts = []
     ret = ""
-    
+
     for argument in arguments:
         for argument2 in arguments:
-            #Check if the argument's conclusion is the negation of the argument2's conclusion
-            if (argument.get_top_rule().get_conclusion().get_value() == argument2.get_top_rule().get_conclusion().get_value() and 
-            argument.get_top_rule().get_conclusion().get_is_negative() != argument2.get_top_rule().get_conclusion().get_is_negative()):
+            # Check if the argument's conclusion is the negation of the argument2's conclusion
+            if (argument.get_top_rule().get_conclusion().get_value() == argument2.get_top_rule().get_conclusion().get_value() and
+                    argument.get_top_rule().get_conclusion().get_is_negative() != argument2.get_top_rule().get_conclusion().get_is_negative()):
                 rebuts.append([argument.get_name(), argument2.get_name()])
-            else :
+            else:
                 # Find if a sub-argument of argument2 be part of the attacked arguments
                 for sub_argument in argument2.get_sub_arguments():
                     for i, _ in enumerate(rebuts):
-                        # Check if the sub-argument is already attacked by the argument 
+                        # Check if the sub-argument is already attacked by the argument
                         if rebuts[i][0] == argument.get_name() and rebuts[i][1] == sub_argument.get_name():
                             # Check duplicates
                             if [argument.get_name(), argument2.get_name()] not in rebuts:
                                 rebuts.append([argument.get_name(), argument2.get_name()])
                                 break
-                        
+
     # Print the rebuts
     attacker = 1
-
     st.text("Number of rebuts: " + str(len(rebuts)))
     for i, _ in enumerate(rebuts):
         number = rebuts[i][0][1:]
         if int(number) > attacker:
             attacker = int(number)
-            ret+= "\n"
+            ret += "\n"
         ret += "(" + rebuts[i][0] + "," + rebuts[i][1] + ")" + " "
     ret += "\n"
 
@@ -255,16 +261,17 @@ def generate_rebuts(arguments):
     return rebuts
 
 
-# Représentation des préférences entre les règles d'une liste de règles passée en paramètre
-def representPreferencesRules(total_rules):
+# Representation of preferences between rules :
+def represent_preferences_rules(total_rules):
     preferred_rules = {}
     for rule in total_rules:
         preferred_rules[rule.get_reference().get_value()] = rule.get_weight()
-    
+
     return preferred_rules
 
 
-# Fonction qui permet de retourner la priorité la plus élevée pour un ensemble de règles
+# Create a function to compare arguments. To do this, we use a function to obtain the strongest rule
+# for an argument and a function to obtain the weakest rule for an argument:
 def best_rule(rules, preferred_rules):
     best_priority = 0
     for rule in rules:
@@ -273,7 +280,8 @@ def best_rule(rules, preferred_rules):
             best_priority = priority_rule
     return best_priority
 
-# Fonction qui permet de retourner la priorité la plus basse pour un ensemble de règles
+
+# Function to get the weakest rule for an argument :
 def worst_rule(rules, preferred_rules):
     worst_priority = 99999
     for rule in rules:
@@ -282,10 +290,11 @@ def worst_rule(rules, preferred_rules):
             worst_priority = priority_rule
     return worst_priority
 
-# Création d'une fonction qui permet de comparer les arguments entre eux et d'afficher cette comparaison 
+
+# Function to compare arguments according to the principle and the link principle chosen :
 def compare_arguments(arguments, preferred_rules, principle, link_principle):
     preferred_arguments = {}
-    priorityArgument = 0
+    priority_argument = 0
 
     for argument in arguments:
         # Place the arguments without defeasible rule in the preferred arguments
@@ -301,10 +310,10 @@ def compare_arguments(arguments, preferred_rules, principle, link_principle):
                     match principle:
                         # In the case of the Elitist principle, the argument take the priority of the best rule
                         case "Elitist":
-                            priorityArgument = best_rule(defeasible_rules, preferred_rules)
+                            priority_argument = best_rule(defeasible_rules, preferred_rules)
                         # In the case of the Democratic principle, the argument take the priority of the worst rule
                         case "Democratic":
-                            priorityArgument = worst_rule(defeasible_rules, preferred_rules)
+                            priority_argument = worst_rule(defeasible_rules, preferred_rules)
 
                 # In the case of the Last Link principle, we get the last defeasible rules of the argument
                 case "Last Link":
@@ -312,13 +321,13 @@ def compare_arguments(arguments, preferred_rules, principle, link_principle):
                     match principle:
                         # In the case of the Elitist principle, the argument take the priority of the best rule
                         case "Elitist":
-                            priorityArgument = best_rule(last_defeasible_rules, preferred_rules)
+                            priority_argument = best_rule(last_defeasible_rules, preferred_rules)
                         # In the case of the Democratic principle, the argument take the priority of the worst rule
                         case "Democratic":
-                            priorityArgument = worst_rule(last_defeasible_rules, preferred_rules)
+                            priority_argument = worst_rule(last_defeasible_rules, preferred_rules)
 
-            preferred_arguments[argument.get_name()] = priorityArgument
-
+            preferred_arguments[argument.get_name()] = priority_argument
+            
     # Print in order of priority
     ret = ""
     for i in range(99, -1, -1):
@@ -335,7 +344,7 @@ def compare_arguments(arguments, preferred_rules, principle, link_principle):
     return preferred_arguments
 
 
-# Fonction permettant de générer et d'afficher les défaites
+# Function for generating defeats :
 def generate_defeats(arguments, rebuts, preferred_arguments, preferred_rules, principle, link_principle):
     defeats = []
     match principle:
@@ -360,12 +369,14 @@ def generate_defeats(arguments, rebuts, preferred_arguments, preferred_rules, pr
                     if argument.get_name() == rebut[1]:
                         match link_principle:
                             case "Weakest Link":
-                                # Check if the attacker has a better priority than the attacked argument and all his sub-arguments
+                                # Check if the attacker has a better priority than
+                                # the attacked argument and all his sub-arguments
                                 if preferred_arguments[rebut[0]] >= best_rule(argument.get_defeasible_rules(),
                                                                               preferred_rules):
                                     defeats.append(rebut)
                                     break
-                                # Check if the attacker argument has aleady a defeat in a sub-argument of the attacked argument
+                                # Check if the attacker argument has already a defeat
+                                # in a sub-argument of the attacked argument
                                 else:
                                     for sub_argument in argument.get_sub_arguments():
                                         for defeat in defeats:
@@ -373,19 +384,21 @@ def generate_defeats(arguments, rebuts, preferred_arguments, preferred_rules, pr
                                                 defeats.append(rebut)
                                                 break
                             case "Last Link":
-                                # Check if the attacker has a better priority than the attacked argument and all his sub-arguments
+                                # Check if the attacker has a better priority than
+                                # the attacked argument and all his sub-arguments
                                 if preferred_arguments[rebut[0]] >= best_rule(argument.get_last_defeasible_rules(),
                                                                               preferred_rules):
                                     defeats.append(rebut)
                                     break
-                                # Check if the attacker argument has aleady a defeat in a sub-argument of the attacked argument
+                                # Check if the attacker argument has aleady a defeat
+                                # in a sub-argument of the attacked argument
                                 else:
                                     for sub_argument in argument.get_sub_arguments():
                                         for defeat in defeats:
                                             if defeat[0] == rebut[0] and defeat[1] == sub_argument.get_name():
                                                 defeats.append(rebut)
                                                 break
-                    
+
     # Print the defeats
     attacker = 1
     st.text("Number of defeats: " + str(len(defeats)))
@@ -400,19 +413,21 @@ def generate_defeats(arguments, rebuts, preferred_arguments, preferred_rules, pr
     st.code(ret, language="python")
     return defeats
 
-# Fonction qui permet de donner le nombre de défaites subies par chaque argument
+
+# Function which gives the number of defeats received by the arguments :
 def degree_of_defeat(arguments, defeats):
-    degree_of_defeat = {}
+    deg_of_defeat = {}
     for argument in arguments:
         number_defeats = 0
         for i, _ in enumerate(defeats):
             if defeats[i][1] == argument.get_name():
                 number_defeats += 1
-        degree_of_defeat[argument.get_name()] = number_defeats
+        deg_of_defeat[argument.get_name()] = number_defeats
 
-    return degree_of_defeat
+    return deg_of_defeat
 
-# Fonction qui permet de calculer le burden_number pour chaque argument
+
+# Function used to calculate the burden number for each argument :
 def get_burden_number(arguments, defeats, steps):
     burden_number = {}
     # We calculate the burden number for each argument for the number of steps
@@ -444,7 +459,8 @@ def get_burden_number(arguments, defeats, steps):
     st.code(ret, language="python")
     return burden_number
 
-# Fonction qui permet de classer les arguments selon leur burden_number
+
+# Function that classifies arguments using burden-based semantics:
 def rank_arguments(arguments, burden_number):
     rank = {}
     # Get the last value of the burden number of each argument
@@ -469,9 +485,6 @@ def rank_arguments(arguments, burden_number):
 
     st.text(ret)
     return rank
-
-
-
 
 
 def main():
@@ -508,42 +521,42 @@ def main():
             code += argument.to_string() + "\n"
         st.code(code, language="python")
 
-        st.text(affichageArgument(arguments))
-
+        st.text(display_arguments(arguments))
 
         generate_undercuts(arguments)
 
         rebuts = generate_rebuts(arguments)
         st.subheader("Defeats")
-        prefered_rules = representPreferencesRules(total_rules)
+        preferred_rules = represent_preferences_rules(total_rules)
 
         strat1 = st.radio("Choose a principle", ("Elitist", "Democratic"), index=None)
         strat2 = st.radio("Choose a link principle", ("Weakest Link", "Last Link"), index=None)
-        if( strat1 and strat2):
-            preferred_arguments = compare_arguments(arguments, prefered_rules, strat1, strat2)
-            defeats = generate_defeats(arguments, rebuts, preferred_arguments, prefered_rules, strat1, strat2)
+        if strat1 and strat2:
+            preferred_arguments = compare_arguments(arguments, preferred_rules, strat1, strat2)
+            defeats = generate_defeats(arguments, rebuts, preferred_arguments, preferred_rules, strat1, strat2)
 
+            # Generation of a graph with arguments as vertices and defeats as edges :
             st.subheader("Argumentation graph")
-            G = nx.DiGraph()
+            g = nx.DiGraph()
 
             # Add the nodes (arguments)
             argument_names = []
             for argument in arguments:
                 argument_names.append(argument.get_name())
-            G.add_nodes_from(argument_names)
+            g.add_nodes_from(argument_names)
 
             # Add the edges (attacks)
-            G.add_edges_from(defeats)
+            g.add_edges_from(defeats)
 
-            # Visualisation du graphe
             plt.figure(figsize=(8, 6))
-            pos = nx.shell_layout(G)
-            nx.draw(G, pos, with_labels=True, node_size=1000, node_color='skyblue', font_size=12, arrowsize=20,
+            pos = nx.shell_layout(g)
+            nx.draw(g, pos, with_labels=True, node_size=1000, node_color='skyblue', font_size=12, arrowsize=20,
                     linewidths=1, edge_color='gray', arrows=True)
 
             plt.title("Argumentation graph")
             st.pyplot(plt)
 
+            # Drawing of the histogram representing the number of defeats received by the arguments :
             d_of_defeat = degree_of_defeat(arguments, defeats)
 
             arg_per_defeat = {}
