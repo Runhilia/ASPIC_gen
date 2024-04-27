@@ -256,7 +256,7 @@ def generate_rebuts(arguments):
 
 
 # Représentation des préférences entre les règles d'une liste de règles passée en paramètre
-def  representPreferencesRules(total_rules):
+def representPreferencesRules(total_rules):
     preferred_rules = {}
     for rule in total_rules:
         preferred_rules[rule.get_reference().get_value()] = rule.get_weight()
@@ -309,7 +309,7 @@ def compare_arguments(arguments, preferred_rules, principle, link_principle):
                 # In the case of the Last Link principle, we get the last defeasible rules of the argument
                 case "Last Link":
                     last_defeasible_rules = argument.get_last_defeasible_rules()
-                    match preferred_arguments:
+                    match principle:
                         # In the case of the Elitist principle, the argument take the priority of the best rule
                         case "Elitist":
                             priorityArgument = best_rule(last_defeasible_rules, preferred_rules)
