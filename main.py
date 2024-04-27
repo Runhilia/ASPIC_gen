@@ -26,7 +26,7 @@ def parse_rules(file):
                 premises_string = groups[1].split(",") if groups[1] else None
                 is_defeasible = False if groups[2] == "->" else True
                 conclusion_string = groups[3].strip() if groups[3] else None
-                priority = int(groups[4]) if groups[4] else -1
+                priority = int(groups[4]) if groups[4] else 99
 
             premises_literal = None
             if premises_string:
@@ -272,27 +272,40 @@ def generate_rebuts(arguments):
 def  representPreferencesRules(total_rules):
     preferred_rules = {}
     for rule in total_rules:
-        if rule.get_weight() == -1:
-            preferred_rules[rule.get_reference().get_value()] = 1
-        elif rule.get_weight() == 0:
-            preferred_rules[rule.get_reference().get_value()] = 3
-        elif rule.get_weight() == 1:
-            preferred_rules[rule.get_reference().get_value()] = 2 
+        preferred_rules[rule.get_reference().get_value()] = rule.get_weight()
     
     return preferred_rules
 
 
 
 #Création d'une fonction qui permet de comparer les arguments entre eux et d'afficher cette comparaison 
-def compareArguments(arguments,preferred_rules,principle,link_principle):
+def best_rule(rules, preferred_rules):
+    best_priority = 0
+    for rule in rules:
+        priority_rule = preferred_rules[rule.get_reference().get_value()]
+        if priority_rule > best_priority:
+            best_priority = priority_rule
+    return best_priority
+
+
+def worst_rule(rules, preferred_rules):
+    worst_priority = 99999
+    for rule in rules:
+        priority_rule = preferred_rules[rule.get_reference().get_value()]
+        if priority_rule < worst_priority:
+            worst_priority = priority_rule
+    return worst_priority
+
+
+def compare_arguments(arguments, preferred_rules, principle, link_principle):
     preferred_arguments = {}
     priorityArgument = 0
-           
+
     for argument in arguments:
-        # Place the arguments without defeasible rule in the preferred arguments 
+        # Place the arguments without defeasible rule in the preferred arguments
         if argument.get_defeasible_rules() == []:
-            preferred_arguments[argument.get_name()] = 1
-        
+            preferred_arguments[argument.get_name()] = 99
+
         # Place the arguments with defeasible rules in the preferred arguments
         else:
             match link_principle:
@@ -302,73 +315,90 @@ def compareArguments(arguments,preferred_rules,principle,link_principle):
                     match principle:
                         # In the case of the Elitist principle, the argument take the priority of the best rule
                         case "Elitist":
-                            priorityArgument = 99999    
-                            for rule in defeasible_rules:
-                                priorityRule = preferred_rules[rule.get_reference().get_value()]
-                                if priorityRule < priorityArgument:
-                                    priorityArgument = priorityRule
+                            priorityArgument = best_rule(defeasible_rules, preferred_rules)
                         # In the case of the Democratic principle, the argument take the priority of the worst rule
                         case "Democratic":
-                            priorityArgument = 0
-                            for rule in defeasible_rules:
-                                priorityRule = preferred_rules[rule.get_reference().get_value()]
-                                if priorityRule > priorityArgument:
-                                    priorityArgument = priorityRule
-                    
+                            priorityArgument = worst_rule(defeasible_rules, preferred_rules)
+
                 # In the case of the Last Link principle, we get the last defeasible rules of the argument
                 case "Last Link":
                     last_defeasible_rules = argument.get_last_defeasible_rules()
                     match preferred_arguments:
                         # In the case of the Elitist principle, the argument take the priority of the best rule
                         case "Elitist":
-                            priorityArgument = 99999
-                            for rule in last_defeasible_rules:
-                                priorityRule = preferred_rules[rule.get_reference().get_value()]
-                                if priorityRule < priorityArgument:
-                                    priorityArgument = priorityRule
+                            priorityArgument = best_rule(last_defeasible_rules, preferred_rules)
                         # In the case of the Democratic principle, the argument take the priority of the worst rule
                         case "Democratic":
-                            priorityArgument = 0
-                            for rule in last_defeasible_rules:
-                                priorityRule = preferred_rules[rule.get_reference().get_value()]
-                                if priorityRule > priorityArgument:
-                                    priorityArgument = priorityRule
-                                    
+                            priorityArgument = worst_rule(last_defeasible_rules, preferred_rules)
+
             preferred_arguments[argument.get_name()] = priorityArgument
-        
+
     # Print in order of priority
-    max_priority = 0
-    for argument in preferred_arguments:
-        if preferred_arguments[argument] > max_priority:
-            max_priority = preferred_arguments[argument]
-            
-    for i in range(1,max_priority + 1):
+    for i in range(99, -1, -1):
+        has_print = False
+        ret = ""
         for argument in preferred_arguments:
             if preferred_arguments[argument] == i:
-                print(argument, end=" ")
-        if i < max_priority:
-            print("<", end=" ")
-    print("\n")
-        
+                ret += argument + " "
+                has_print = True
+        if i > 0 and has_print:
+            ret += "> "
+    ret += "\n"
+    st.text("Preferred arguments: ")
+    st.text(ret)
     return preferred_arguments
 
 
 #Fonction permettant de générer et d'afficher les défaites
-def generate_defeats(arguments, rebuts, preferred_arguments):
+def generate_defeats(arguments, rebuts, preferred_arguments, preferred_rules, principle, link_principle):
     defeats = []
-    for rebut in rebuts:
-        # Check if the attacker is in the preferred arguments
-        if preferred_arguments[rebut[0]] <= preferred_arguments[rebut[1]]:
-            defeats.append(rebut)
-        else:
-            # Check if the attacker argument has aleady a defeat in a sub-argument of the attacked argument
-            for argument in arguments:
-                if argument.get_name() == rebut[1]:
-                    for sub_argument in argument.get_sub_arguments():
-                        for defeat in defeats:
-                            if defeat[0] == rebut[0] and defeat[1] == sub_argument.get_name():
-                                defeats.append(rebut)
-                                break
+    match principle:
+        case "Elitist":
+            for rebut in rebuts:
+                # Check if the attacker is in the preferred arguments
+                if preferred_arguments[rebut[0]] >= preferred_arguments[rebut[1]]:
+                    defeats.append(rebut)
+                else:
+                    # Check if the attacker argument has aleady a defeat in a sub-argument of the attacked argument
+                    for argument in arguments:
+                        if argument.get_name() == rebut[1]:
+                            for sub_argument in argument.get_sub_arguments():
+                                for defeat in defeats:
+                                    if defeat[0] == rebut[0] and defeat[1] == sub_argument.get_name():
+                                        defeats.append(rebut)
+                                        break
+
+        case "Democratic":
+            for rebut in rebuts:
+                for argument in arguments:
+                    if argument.get_name() == rebut[1]:
+                        match link_principle:
+                            case "Weakest Link":
+                                # Check if the attacker has a better priority than the attacked argument and all his sub-arguments
+                                if preferred_arguments[rebut[0]] >= best_rule(argument.get_defeasible_rules(),
+                                                                              preferred_rules):
+                                    defeats.append(rebut)
+                                    break
+                                # Check if the attacker argument has aleady a defeat in a sub-argument of the attacked argument
+                                else:
+                                    for sub_argument in argument.get_sub_arguments():
+                                        for defeat in defeats:
+                                            if defeat[0] == rebut[0] and defeat[1] == sub_argument.get_name():
+                                                defeats.append(rebut)
+                                                break
+                            case "Last Link":
+                                # Check if the attacker has a better priority than the attacked argument and all his sub-arguments
+                                if preferred_arguments[rebut[0]] >= best_rule(argument.get_last_defeasible_rules(),
+                                                                              preferred_rules):
+                                    defeats.append(rebut)
+                                    break
+                                # Check if the attacker argument has aleady a defeat in a sub-argument of the attacked argument
+                                else:
+                                    for sub_argument in argument.get_sub_arguments():
+                                        for defeat in defeats:
+                                            if defeat[0] == rebut[0] and defeat[1] == sub_argument.get_name():
+                                                defeats.append(rebut)
+                                                break
                     
     # Print the defeats
     attacker = 1
@@ -383,6 +413,78 @@ def generate_defeats(arguments, rebuts, preferred_arguments):
     ret += "\n"
     st.code(ret, language="python")
     return defeats
+
+
+def degree_of_defeat(arguments, defeats):
+    degree_of_defeat = {}
+    for argument in arguments:
+        number_defeats = 0
+        for i, _ in enumerate(defeats):
+            if defeats[i][1] == argument.get_name():
+                number_defeats += 1
+        degree_of_defeat[argument.get_name()] = number_defeats
+
+    return degree_of_defeat
+
+
+def get_burdern_number(arguments, defeats, steps):
+    burden_number = {}
+    # We calculate the burden number for each argument for the number of steps
+    for i in range(0, steps):
+        for argument in arguments:
+            # If it is the first step, the burden number is 1
+            if i == 0:
+                burden_number[argument.get_name()] = [1]
+            # Else the burden number is 1 + 1/burden_number of the defeated arguments
+            else:
+                bur = 1
+                for defeat in defeats:
+                    if defeat[1] == argument.get_name():
+                        for arg in arguments:
+                            if arg.get_name() == defeat[0]:
+                                bur += 1 / (burden_number[arg.get_name()][i - 1])
+                                bur = round(bur, 4)
+                burden_number[argument.get_name()].append(bur)
+
+    st.text("Burden number: ")
+    ret = ""
+    # Print the burden number of each argument
+    for burden in burden_number:
+        ret += burden + ": "
+        for i in range(0, steps):
+            ret += str(burden_number[burden][i]) + " "
+        ret += "\n"
+
+    st.code(ret, language="python")
+    return burden_number
+
+
+def rank_arguments(arguments, burden_number):
+    rank = {}
+    # Get the last value of the burden number of each argument
+    for argument in arguments:
+        rank[argument.get_name()] = burden_number[argument.get_name()][9]
+
+    # Sort the arguments by the burden number
+    rank = dict(sorted(rank.items(), key=lambda item: item[1]))
+
+    st.text("Rank of arguments: ")
+    ret = ""
+    # Print the rank of the arguments
+    for r in rank:
+        if r == list(rank.keys())[0]:
+            ret += r
+        else:
+            # Check if the burden number is the same that the previous argument
+            if rank[r] == rank[list(rank.keys())[list(rank.keys()).index(r) - 1]]:
+                ret += ", " + r
+            else:
+                ret += "\n" + r
+
+    st.text(ret)
+    return rank
+
+
 
 
 
@@ -432,8 +534,8 @@ def main():
         strat1 = st.radio("Choose a principle", ("Elitist", "Democratic"), index=None)
         strat2 = st.radio("Choose a link principle", ("Weakest Link", "Last Link"), index=None)
         if( strat1 and strat2):
-            preferred_arguments = compareArguments(arguments, prefered_rules, strat1, strat2)
-            defeats = generate_defeats(arguments, rebuts, preferred_arguments)
+            preferred_arguments = compare_arguments(arguments, prefered_rules, strat1, strat2)
+            defeats = generate_defeats(arguments, rebuts, preferred_arguments, prefered_rules, strat1, strat2)
 
             G = nx.DiGraph()
 
@@ -455,7 +557,30 @@ def main():
             plt.title("Argumentation graph")
             st.pyplot(plt)
 
+            d_of_defeat = degree_of_defeat(arguments, defeats)
 
+            arg_per_defeat = {}
+            for argument in d_of_defeat:
+                if d_of_defeat[argument] in arg_per_defeat:
+                    arg_per_defeat[d_of_defeat[argument]] += 1
+                else:
+                    arg_per_defeat[d_of_defeat[argument]] = 1
+                    
+            plt.clf()
+            # Separation of data into lists for x-axis and y-axis
+            x = list(arg_per_defeat.keys())
+            y = list(arg_per_defeat.values())
+
+            # Creating and displaying the histogram
+            plt.bar(x, y, color='skyblue')
+            plt.title('Number of arguments per defeat-in-degree')
+            plt.xlabel('Histogram')
+            plt.ylabel('Frequency')
+            st.pyplot(plt)
+
+            burden_number = get_burdern_number(arguments, defeats, 10)
+
+            rank_arguments(arguments, burden_number)
 
 
 main()
