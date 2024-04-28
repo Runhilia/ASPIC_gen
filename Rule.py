@@ -29,7 +29,7 @@ class Rule:
 
     def get_premises(self):
         return self.premises
-
+    
     def get_conclusion(self):
         return self.conclusion
     

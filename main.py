@@ -67,8 +67,15 @@ def contraposition(rule):
             new_rule = Rule(new_premises, Literal(rule.get_premises()[i].get_value(),
                                                   not rule.get_premises()[i].get_is_negative()),
                             False, rule.get_weight(), Literal(f, False))
-            new_rules.append(new_rule)
-
+            # Check if the new rule is not already in the list
+            rule_exists = False
+            for r in rules:
+                if r.get_conclusion().get_value() == new_rule.get_conclusion().get_value() and r.get_premises() == new_rule.get_premises():
+                    rule_exists = True
+                    break
+            if not rule_exists:
+                new_rules.append(new_rule)
+            
     return new_rules
 
 
